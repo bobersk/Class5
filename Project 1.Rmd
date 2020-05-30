@@ -1,0 +1,248 @@
+---
+title: "Reproducible Research Project 1"
+author: "David Boberski"
+date: "5/30/2020"
+output: html_document
+---
+
+&nbsp;
+
+#### Q1. Code for reading in the dataset and/or processing the data
+
+**Loading and preprocessing the data**  
+
+1. Load the data (i.e. read.csv()  
+2. Process/transform the data (if necessary) into a format suitable for your analysis
+
+```{r Fig1 setup, include=TRUE}
+
+#1 Code for reading in the dataset and processing the data
+
+setwd("/Users/davidboberski/Desktop/Dad/R files/Course 5/")
+data <- read.csv("activity.csv", sep = ',', header = TRUE, stringsAsFactors=FALSE)
+data <- as.data.frame(data)
+data <- na.omit(data)
+head(data)
+
+```
+
+&nbsp;
+
+#### Q2. Histogram of the total number of steps taken each day
+
+```{r Fig2 setup, include=TRUE}
+
+library(plyr)
+data <- ddply(data,.(date),numcolwise(sum))
+#png("Plot1.png", width=480, height=480)
+hist(data$steps,
+     main="Daily Steps Frequency",
+     xlab="Steps per Day"
+     )
+```
+
+&nbsp;
+
+#### Q3. Mean and median number of steps taken each day
+
+**What is mean total number of steps taken per day?**
+
+*For this part of the assignment, you can ignore the missing values in the dataset.*  
+
+1. Calculate the total number of steps taken per day  
+2. If you do not understand the difference between a histogram and a barplot, research the difference between them. Make a histogram of the total number of steps taken each day  
+3. Calculate and report the mean and median of the total number of steps taken per day  
+
+
+```{r Fig3 setup, include=TRUE}
+
+data <- read.csv("activity.csv", sep = ',', header = TRUE, stringsAsFactors=FALSE)
+data <- as.data.frame(data)
+data <- na.omit(data)
+#head(data)
+
+#head(data.mean)
+#head(data.median)
+
+mean(data$steps)
+median(data$steps)
+```
+
+
+&nbsp;
+
+#### Q4. Time series plot of the average number of steps taken
+
+```{r Fig4 setup, include=TRUE}
+
+library(plyr)
+library(tidyverse)
+library(reshape2)
+
+data <- read.csv("activity.csv", sep = ',', header = TRUE, stringsAsFactors=FALSE)
+data <- as.data.frame(data)
+data <- na.omit(data)
+head(data)
+
+data.mean <- ddply(data,.(date),numcolwise(mean))
+data.median <- ddply(data,.(date),numcolwise(median))
+
+plot.data <- cbind(data.mean$date, data.mean$steps,data.median$steps)
+colnames(plot.data) <- c("Date","Mean Steps", "Median Steps")
+plot.data <- as.data.frame(plot.data)
+head(plot.data)
+
+meltdf <- melt(plot.data,id="Date")
+
+plot(data.mean$steps,type="l",col="red",
+     main = "Average Steps Per Day" ,
+     ylab = "Steps",
+     xlab = "Date")
+```
+
+&nbsp;
+
+#### Q5. The 5-minute interval that, on average, contains the maximum number of steps
+
+**What is the average daily activity pattern?**
+
+1 Make a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all days (y-axis)
+2. Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps? (ANSWER: Interval 2355.0000)
+
+```{r Fig5 setup, include=TRUE}
+
+library(plyr)
+library(tidyverse)
+library(reshape2)
+
+data <- read.csv("activity.csv", sep = ',', header = TRUE, stringsAsFactors=FALSE)
+data <- as.data.frame(data)
+data <- na.omit(data)
+head(data)
+
+data <- ddply(data,.(interval),numcolwise(mean))
+
+plot(data$steps,type="l",col="red",
+     main = "Average Interval Steps" ,
+     ylab = "Steps",
+     xlab = "Interval")
+
+colMax <- function(data) sapply(data, max, na.rm = TRUE)
+colMax(data)
+
+```
+
+
+&nbsp;
+
+#### Q6. Code to describe and show a strategy for imputing missing data
+
+**Imputing missing values**
+
+*To impute missing data we simply use the previous available value using "na.locf" function.*  
+
+Note that there are a number of days/intervals where there are missing values (coded as NA). The presence of missing days may introduce bias into some calculations or summaries of the data.  
+
+1. Calculate and report the total number of missing values in the dataset (i.e. the total number of rows with NAs)  
+2.. Devise a strategy for filling in all of the missing values in the dataset. The strategy does not need to be sophisticated. For example, you could use the mean/median for that day, or the mean for that 5-minute interval, etc.  
+3. Create a new dataset that is equal to the original dataset but with the missing data filled in.  
+4. Make a histogram of the total number of steps taken each day and Calculate and report the mean and median total number of steps taken per day. Do these values differ from the estimates from the first part of the assignment? What is the impact of imputing missing data on the estimates of the total daily number of steps?
+
+ANSWER: Using my strategy of simply filling NAs with the previous available value there are far more zeros in the series, therefore lowering the mean and median values for each day.
+
+```{r Fig6 setup, include=TRUE}
+
+library(zoo)
+library(tidyverse)
+library(reshape2)
+
+data <- read.csv("activity.csv", sep = ',', header = TRUE, stringsAsFactors=FALSE)
+data <- as.data.frame(data)
+
+# do not remove missing NAs and calculate mean / median before imputing values
+#data <- na.omit(data)
+mean(data$steps)
+median(data$steps)
+
+# count the number of NAs in each column
+sum(is.na(data$steps))
+sum(is.na(data$sdate))
+sum(is.na(data$interval))
+
+# impute missing values by using the previous good value
+data <- na.locf(data)
+head(data)
+
+mean(data$steps)
+median(data$steps)
+
+```
+
+
+&nbsp;
+
+#### Q7. Histogram of the total number of steps taken each day after missing values are imputed
+***
+
+```{r Fig7 setup, include=TRUE}
+
+library(plyr)
+library(tidyverse)
+library(reshape2)
+
+data <- read.csv("activity.csv", sep = ',', header = TRUE, stringsAsFactors=FALSE)
+data <- as.data.frame(data)
+# data <- na.omit(data)
+
+data <- na.locf(data)
+
+hist(data$steps,
+     main="Daily Steps Frequency, With Imputed Missing Values",
+     xlab="Steps per Day")
+        
+```
+
+
+&nbsp;
+
+#### Q8. Panel plot comparing the average number of steps taken per 5-minute interval across weekdays and weekends
+
+** From the table below we can see that steps pick up over the weekend.**
+
+```{r Fig8 setup, include=TRUE}
+
+library(plyr)
+library(tidyverse)
+library(reshape2)
+
+data <- read.csv("activity.csv", sep = ',', header = TRUE, stringsAsFactors=FALSE)
+data <- as.data.frame(data)
+# data <- na.omit(data)
+
+# fill in NAs with last available value
+data <- na.locf(data)
+
+#add new column with weekdays
+data$day <- weekdays(as.Date(data$date))
+
+data <- read.csv("activity.csv", sep = ',', header = TRUE, stringsAsFactors=FALSE)
+data <- as.data.frame(data)
+data <- na.locf(data)
+head(data)
+
+# create new column with day of the week
+data$day <- weekdays(as.Date(data$date))
+
+data.by.day <- ddply(data,.(day),numcolwise(mean))
+data.by.day
+
+plot(data.by.day$steps)
+
+```
+
+
+&nbsp;
+
+#### Q9. All of the R code needed to reproduce the results (numbers, plots, etc.) in the report
+***
+The relevant code is listed in each question.
